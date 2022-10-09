@@ -68,7 +68,7 @@ class BasicCharacterControls {
         }
     }
     
-    Update(timeInSeconds) { 
+    Update(timeInSeconds) {
         // timeInSeconds = delta 값이라고 생각 / 약 0.01 정도
         const velocity = this._velocity;
         const frameDecceleration /* 프레임감속 */ = new THREE.Vector3(
@@ -77,9 +77,7 @@ class BasicCharacterControls {
             velocity.z * this._decceleration.z,
         );
         frameDecceleration.multiplyScalar(timeInSeconds);
-        frameDecceleration.z = Math.sign(frameDecceleration.z) * Math.min(
-            Math.abs(frameDecceleration.z), Math.abs(velocity.z)
-        )
+        frameDecceleration.z = Math.sign(frameDecceleration.z) * Math.min( Math.abs(frameDecceleration.z), Math.abs(velocity.z) );
         velocity.add(frameDecceleration);
 
         const controlObject = this._params.target;
@@ -95,7 +93,9 @@ class BasicCharacterControls {
         }
         if ( this._move.left ) {
             _A.set(0, 1, 0);
-            _Q.setFromAxisAngle(_A, Math.PI * timeInSeconds * this._acceleration.y) // (어떤축을 기준으로 할건지, 각도) -- y 축을 기준으로, 뒤에 값만큼 회전
+            _Q.setFromAxisAngle(_A, Math.PI * timeInSeconds * this._acceleration.y) 
+            // (어떤축을 기준으로 할건지, 각도) -- y 축을 기준으로, 뒤에 값만큼 회전
+            // PI 180도 * timeInSeconds =비슷= delta타임 일정 값 0.01 ? * 내가 설정한 가속
             _R.multiply(_Q);
         }
         if ( this._move.right ) {
@@ -144,7 +144,7 @@ class LoadModelDemo {
 
         document.body.appendChild(this._threejs.domElement);
         
-        window.addEventListener('resize', () => { this.OnWindowResize() }, false);
+        window.addEventListener('resize', () => { this._OnWindowResize() }, false);
         
         this._camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 1.0, 1000.0);
         this._camera.position.set(75, 20, 0);
