@@ -248,7 +248,6 @@ class FiniteStateMachine {
   }
 
   Update(timeElapsed, input) {
-    // console.log(this._currentState);
     if (this._currentState) {
       this._currentState.Update(timeElapsed, input);
     }
@@ -282,7 +281,7 @@ class State {
 
 class DanceState extends State {
   constructor(parent) {
-    super(parent);
+    super(parent); // 부모 오브젝트의 함수를 호출할 때 사용
 
     this._FinishedCallback = () => {
       this._Finished();
@@ -302,9 +301,9 @@ class DanceState extends State {
       const prevAction = this._parent._proxy._animations[prevState.Name].action;
 
       curAction.reset();
-      curAction.setLoop(THREE.LoopOnce, 1);
+      curAction.setLoop(THREE.LoopOnce, 1); // 1번만 실행
       curAction.clampWhenFinished = true;
-      curAction.crossFadeFrom(prevAction, 0.2, true);
+      curAction.crossFadeFrom(prevAction, 0.2, true); // 부드럽게 처리
       curAction.play();
     } else {
       curAction.play();
@@ -365,7 +364,6 @@ class WalkState extends State {
   Exit() {}
 
   Update(timeElapsed, input) {
-    // console.log('WalkState');
     if (input._keys.forward || input._keys.backward) {
       if (input._keys.shift) {
         this._parent.SetState('run');
@@ -395,6 +393,7 @@ class RunState extends State {
       curAction.enabled = true;
 
       if (prevState.Name == 'walk') {
+        console.log(prevAction.getClip());
         const ratio = curAction.getClip().duration / prevAction.getClip().duration;
         curAction.time = prevAction.time * ratio;
       } else {
@@ -413,7 +412,6 @@ class RunState extends State {
   Exit() {}
 
   Update(timeElapsed, input) {
-    // console.log('RunState');
     if (input._keys.forward || input._keys.backward) {
       if (!input._keys.shift) {
         this._parent.SetState('walk');
@@ -435,15 +433,19 @@ class IdleState extends State {
   }
 
   Enter(prevState) {
+    // this._parent = CharacterFSM;
+    // this._parent._proxy = BasicCharacterControllerProxy; --- 위에서 new CharacterFSM( new BasicCharacterControllerProxy(--) ) 했으니까
+    // this._parent._proxy._animations['idle'] = idle 애니에니션 _OnLoad 로 설정한거
+
     const idleAction = this._parent._proxy._animations['idle'].action;
     if (prevState) {
       const prevAction = this._parent._proxy._animations[prevState.Name].action;
-      idleAction.time = 0.0;
-      idleAction.enabled = true;
-      idleAction.setEffectiveTimeScale(1.0);
-      idleAction.setEffectiveWeight(1.0);
-      idleAction.crossFadeFrom(prevAction, 0.5, true);
-      idleAction.play();
+      idleAction.time = 0.0; // time 0 으로 세팅하고
+      idleAction.enabled = true; // 잠시 멈추고
+      idleAction.setEffectiveTimeScale(1.0); // ?????
+      idleAction.setEffectiveWeight(1.0); // ?????
+      idleAction.crossFadeFrom(prevAction, 0.5, true); // 0.5초 동안 부드럽게 idle 상태로 이동
+      idleAction.play(); // 애니메이션 시작
     } else {
       idleAction.play();
     }
@@ -453,10 +455,8 @@ class IdleState extends State {
 
   Update(_, input) {
     if (input._keys.forward || input._keys.backward) {
-      console.log('idle -> walk');
       this._parent.SetState('walk');
     } else if (input._keys.space) {
-      console.log('idle -> dance');
       this._parent.SetState('dance');
     }
   }
