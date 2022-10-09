@@ -2,7 +2,6 @@ import * as THREE from 'three';
 
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
 class BasicCharacterControllerProxy {
   constructor(animations) {
@@ -24,6 +23,7 @@ class BasicCharacterController {
     this._decceleration = new THREE.Vector3(-0.0005, -0.0001, -5.0);
     this._acceleration = new THREE.Vector3(1, 0.25, 50.0);
     this._velocity = new THREE.Vector3(0, 0, 0);
+    this._position = new THREE.Vector3();
 
     this._animations = {};
     this._input = new BasicCharacterControllerInput();
@@ -78,8 +78,19 @@ class BasicCharacterController {
     });
   }
 
-  Update(timeInSeconds) {
+  get Position() {
+    return this._position;
+  }
+
+  get Rotation() {
     if (!this._target) {
+      return new THREE.Quaternion();
+    }
+    return this._target.quaternion;
+  }
+
+  Update(timeInSeconds) {
+    if (!this._stateMachine._currentState) {
       return;
     }
 
@@ -147,7 +158,7 @@ class BasicCharacterController {
     controlObject.position.add(forward);
     controlObject.position.add(sideways);
 
-    oldPosition.copy(controlObject.position);
+    this._position.copy(controlObject.position);
 
     if (this._mixer) {
       this._mixer.update(timeInSeconds);
@@ -462,6 +473,46 @@ class IdleState extends State {
   }
 }
 
+class ThirdPersonCamera {
+  constructor(params) {
+    this._params = params;
+    this._camera = params.camera;
+
+    this._currentPosition = new THREE.Vector3();
+    this._currentLookat = new THREE.Vector3();
+  }
+
+  _CalculateIdealOffset() {
+    const idealOffset = new THREE.Vector3(-15, 20, -30);
+    idealOffset.applyQuaternion(this._params.target.Rotation); // ????
+    idealOffset.add(this._params.target.Position);
+    return idealOffset;
+  }
+
+  _CalculateIdealLookat() {
+    const idealLookat = new THREE.Vector3(0, 10, 50);
+    idealLookat.applyQuaternion(this._params.target.Rotation); // ????
+    idealLookat.add(this._params.target.Position);
+    return idealLookat;
+  }
+
+  Update(timeElapsed) {
+    const idealOffset = this._CalculateIdealOffset();
+    const idealLookat = this._CalculateIdealLookat();
+
+    // const t = 0.05;
+    // const t = 4.0 * timeElapsed;
+    const t = 1.0 - Math.pow(0.001, timeElapsed);
+    // console.log(t);
+
+    this._currentPosition.lerp(idealOffset, t);
+    this._currentLookat.lerp(idealLookat, t);
+
+    this._camera.position.copy(this._currentPosition);
+    this._camera.lookAt(this._currentLookat);
+  }
+}
+
 class ThirdPersonCameraDemo {
   constructor() {
     this._Initialize();
@@ -512,10 +563,6 @@ class ThirdPersonCameraDemo {
     light = new THREE.AmbientLight('#fff', 0.25);
     this._scene.add(light);
 
-    const controls = new OrbitControls(this._camera, this._threejs.domElement);
-    controls.target.set(0, 10, 0);
-    controls.update();
-
     const loader = new THREE.CubeTextureLoader();
     const texture = loader.load([
       './resources/posx.jpg',
@@ -547,6 +594,11 @@ class ThirdPersonCameraDemo {
       scene: this._scene,
     };
     this._controls = new BasicCharacterController(params);
+
+    this._thirdPersonCamera = new ThirdPersonCamera({
+      camera: this._camera,
+      target: this._controls,
+    });
   }
 
   _OnWindowResize() {
@@ -578,6 +630,8 @@ class ThirdPersonCameraDemo {
     if (this._controls) {
       this._controls.Update(timeElapsedS);
     }
+
+    this._thirdPersonCamera.Update(timeElapsed);
   }
 }
 
