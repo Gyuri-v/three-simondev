@@ -15,6 +15,12 @@ function clamp(x, a, b) {
   return Math.min(Math.max(x, a), b);
 }
 
+class FirstPersonCamera {
+  constructor() {
+    // 
+  }
+}
+
 class FirstPersonCameraDemo {
   constructor() {
     this.initialize_();
@@ -32,10 +38,13 @@ class FirstPersonCameraDemo {
     this.onWindowResize_();
   }
 
-  // initializeDemo_() {
-  //   this.controls_ = new FirstPersonControls(this.camera_, this.threejs_.domElemnt);
+  initializeDemo_() {
+    // this.controls_ = new FirstPersonControls(this.camera_, this.threejs_.domElement);
+    // this.controls_.lookSpeed = 0.8;
+    // this.controls_.movementSpeed = 5;
 
-  // }
+    this.fpsCamera_ = new FirstPersonCamera(this.camera_, this.objects_);
+  }
 
   initializeRenderer_() {
     this.threejs_ = new THREE.WebGL1Renderer({
@@ -50,7 +59,7 @@ class FirstPersonCameraDemo {
 
     document.body.appendChild(this.threejs_.domElement);
 
-    window.addEventListener('resize', () => {
+    window.addEventListener('resize', () => { 
       this.onWindowResize_();
     }, false);
 
@@ -162,4 +171,112 @@ class FirstPersonCameraDemo {
 
     this.uiScene_.add(this.sprite_);
   }
+
+  initializeLight_() {
+    const distance = 50;
+    const angle = Math.PI / 4;
+    const penumbra = 0.5;
+    const decay = 1;
+
+    let light = new THREE.SpotLight('#fff', distance, angle, penumbra, decay);f
+    light.castShadow = true;
+    // ????
+    light.shadow.bias = -0.00001;
+    light.shadow.mapSize.width = 4096;
+    light.shadow.mapSize.height = 4096;
+    light.shadow.camera.near = 1;
+    light.shadow.camera.far = 100;
+
+    light.position.set(25, 25, 0);
+    light.lookAt(0, 0, 0);
+    this.scene_.add(light);
+
+    const upColour = 0xffff80;
+    const downColur = 0x808080;
+    light = new THREE.HemisphereLight(upColour, downColur, 0.5);
+    light.color.setHSL(0.6, 1, 0.6); // 0과 1 사이의 색조 값, 채도 값, 밝기 값 순서대로
+    light.groundColor.setHSL(0.095, 1, 0.75); // groundColor : 생성자에 전달된 조명의 바탕색. 기본값은 흰색
+    light.position.set(0, 4, 0);
+    this.scene_.add(light);
+  }
+
+  loadMaterial_(name, tiling) {
+    const mapLoader = new THREE.TextureLoader();
+    const maxAnisotropy = this.threejs_.capabilities.getMaxAnisotropy(); // 사용 가능한 최대 이방성을 반환
+
+    const metalMap = mapLoader.load('resources/freepbr/' + name + 'metallic.png');
+    metalMap.anisotropy = maxAnisotropy;
+    metalMap.wrapS = THREE.RepeatWrapping;
+    metalMap.wrapT = THREE.RepeatWrapping;
+    metalMap.repeat.set(tiling, tiling);
+
+    const albedo = mapLoader.load('resources/freepbr/' + name + 'albedo.png');
+    albedo.anisotropy = maxAnisotropy;
+    albedo.wrapS = THREE.RepeatWrapping;
+    albedo.wrapT = THREE.RepeatWrapping;
+    albedo.repeat.set(tiling, tiling);
+    albedo.encoding = THREE.sRGBEncoding;
+
+    const normalMap = mapLoader.load('resources/freepbr/' + name + 'normal.png');
+    normalMap.anisotropy = maxAnisotropy;
+    normalMap.wrapS = THREE.RepeatWrapping;
+    normalMap.wrapT = THREE.RepeatWrapping;
+    normalMap.repeat.set(tiling, tiling);
+
+    const roughnessMap = mapLoader.load('resources/freepbr/' + name + 'roughness.png');
+    roughnessMap.anisotropy = maxAnisotropy;
+    roughnessMap.wrapS = THREE.RepeatWrapping;
+    roughnessMap.wrapT = THREE.RepeatWrapping;
+    roughnessMap.repeat.set(tiling, tiling);
+
+    const material = new THREE.MeshStandardMaterial({
+      metalnessMap: metalMap,
+      map: albedo,
+      normalMap: normalMap,
+      roughnessMap: roughnessMap
+    });
+
+    return material;
+  }
+
+  initializePostFX_() {}
+
+  onWindowResize_() {
+    this.camera_.aspect = window.innerWidth / window.innerHeight;
+    this.camera_.updateProjectionMatrix();
+
+    this.uiCamera_.left = -this.camera_.aspect;
+    this.uiCamera_.right = this.camera_.aspect;
+    this.uiCamera_.updateProjectionMatrix();
+    
+    this.threejs_.setSize(window.innerWidth, window.innerHeight);
+  }
+
+  raf_() {
+    requestAnimationFrame((t) => {
+      if (this.previousRAF_ === null) {
+        this.previousRAF_ = t;
+      }
+      
+      this.step_(t - this.previousRAF_);
+      this.threejs_.autoClear = true;
+      this.threejs_.render(this.scene_, this.camera_);
+      this.threejs_.autoClear = false; // ???? 왜 또하는가?
+      this.threejs_.render(this.uiCamera_, this.uiCamera_);
+      this.previousRAF_ = t;
+      this.raf_();
+    }) 
+  }
+
+  step_(timeElapsed) {
+    const timeElapsedS = timeElapsed * 0.001;
+    
+    this.fpsCamera_.update(timeElapsed);
+  }
 }
+
+let _APP = null;
+
+window.addEventListener('DOMContentLoaded', () => {
+  _APP = new FirstPersonCameraDemo();
+})
