@@ -96,7 +96,6 @@ class BasicCharacterController {
 
     this._stateMachine.Update(timeInSeconds, this._input);
 
-    // ????????
     const velocity = this._velocity;
     const frameDecceleration = new THREE.Vector3(
       velocity.x * this._decceleration.x,
@@ -130,13 +129,13 @@ class BasicCharacterController {
     }
     if (this._input._keys.left) {
       _A.set(0, 1, 0);
-      _Q.setFromAxisAngle(_A, 4.0 * Math.PI * timeInSeconds * this._acceleration.y); // ???????? 왜 4가 붙었는지
-      _R.multiply(_Q); // ????????
+      _Q.setFromAxisAngle(_A, 4.0 * Math.PI * timeInSeconds * this._acceleration.y);
+      _R.multiply(_Q);
     }
     if (this._input._keys.right) {
       _A.set(0, 1, 0);
-      _Q.setFromAxisAngle(_A, 4.0 * -Math.PI * timeInSeconds * this._acceleration.y); // ????????
-      _R.multiply(_Q); // ????????
+      _Q.setFromAxisAngle(_A, 4.0 * -Math.PI * timeInSeconds * this._acceleration.y);
+      _R.multiply(_Q);
     }
 
     controlObject.quaternion.copy(_R);
@@ -232,7 +231,6 @@ class BasicCharacterControllerInput {
 }
 
 class FiniteStateMachine {
-  //// ?????
   constructor() {
     this._states = {};
     this._currentState = null;
@@ -267,7 +265,7 @@ class FiniteStateMachine {
 
 class CharacterFSM extends FiniteStateMachine {
   constructor(proxy) {
-    super(); // ??????
+    super();
     this._proxy = proxy;
     this._Init();
   }
@@ -453,8 +451,8 @@ class IdleState extends State {
       const prevAction = this._parent._proxy._animations[prevState.Name].action;
       idleAction.time = 0.0; // time 0 으로 세팅하고
       idleAction.enabled = true; // 잠시 멈추고
-      idleAction.setEffectiveTimeScale(1.0); // ?????
-      idleAction.setEffectiveWeight(1.0); // ?????
+      idleAction.setEffectiveTimeScale(1.0); // timeScale 설정
+      idleAction.setEffectiveWeight(1.0);  // 가중치 설정
       idleAction.crossFadeFrom(prevAction, 0.5, true); // 0.5초 동안 부드럽게 idle 상태로 이동
       idleAction.play(); // 애니메이션 시작
     } else {
