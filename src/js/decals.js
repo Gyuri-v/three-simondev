@@ -141,6 +141,36 @@ class FirstPersonCamera {
         this.updateTranslation_(timeElapsedS);
         this.updateHeadBob_(timeElapsedS);
         this.input_.update(timeElapsedS); // input 들 계속 업데이트
+        this.updateDecals_();
+    }
+
+    updateDecals_() {
+        if ( !this.input_.current_.leftButton && this.input_.previous_.leftButton ) {
+            const raycaster = new THREE.Raycaster();
+            const pos = {x: 0, y: 0};
+            
+            raycaster.setFromCamera(pos, this.camera_);
+            const hits = raycaster.intersectObject(this.sceneObjects_);
+
+            if ( !hits.length ) {
+                return;
+            }
+
+            // ????
+            const position = hits[0].point.clone();
+            const eye = position.clone();
+            eye.add(hits[0].face.normal);
+
+            const rotation = new THREE.Matrix4();
+            rotation.lookAt(eye, position, THREE.Object3D.DefaultUp);
+            const euler = new THREE.Euler();
+            euler.setFromRotationMatrix(rotation);
+
+            const decalGeometry = new DecalGeometry(
+                hits[0].object, hits[0].point, euler, new THREE.Vector3(1, 1, 1)
+            );
+            // const decalMaterial = new THREE.MeshStandardMaterial()
+        }
     }
 
     updateCamera_(_) {
